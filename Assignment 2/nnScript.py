@@ -125,8 +125,7 @@ def preprocess():
     test_label = test_label_preprocess[test_perm]
 
     # Feature selection
-    # Your code here.
-
+    
     print('preprocess done')
 
     return train_data, train_label, validation_data, validation_label, test_data, test_label
