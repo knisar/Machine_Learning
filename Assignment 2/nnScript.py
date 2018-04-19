@@ -2,8 +2,10 @@ import numpy as np
 from scipy.optimize import minimize
 from scipy.io import loadmat
 from math import sqrt
+import time
 
 
+# t1 = time.time()
 def initializeWeights(n_in, n_out):
     """
     # initializeWeights return the random weights for Neural Network given the
@@ -24,8 +26,9 @@ def initializeWeights(n_in, n_out):
 def sigmoid(z):
     """# Notice that z can be a scalar, a vector or a matrix
     # return the sigmoid of input z"""
+    result = 1 / (1 + np.exp(-z))
 
-    return  # your code here
+    return  result# your code here
 
 
 def preprocess():
@@ -125,7 +128,18 @@ def preprocess():
     test_label = test_label_preprocess[test_perm]
 
     # Feature selection
+    # Your code here.
+    remove_indices = np.all(train_data == train_data[0,:], axis = 0)
     
+    indices = [i for i in range(0, len(remove_indices)) if remove_indices[i] == True]
+    
+    train_data = np.delete(train_data, indices, 1)
+    test_data = np.delete(test_data, indices, 1)
+    validation_data = np.delete(validation_data,indices,1)
+    train_label = train_label.reshape(len(train_label), 1)
+    test_label = test_label.reshape(len(test_label), 1)
+    validation_label = validation_label.reshape(len(validation_label), 1)
+
     print('preprocess done')
 
     return train_data, train_label, validation_data, validation_label, test_data, test_label
@@ -177,17 +191,54 @@ def nnObjFunction(params, *args):
 
     # Your code here
     #
-    #
-    #
-    #
-    #
+    bias = np.ones(training_data.shape[0])
+    training_data = np.column_stack((training_data, bias))
+
+    aj = np.dot(training_data, w1.transpose())
+    zj = sigmoid(aj)
+
+    zj_bias = np.ones(zj.shape[0])
+    zj = np.column_stack((zj, zj_bias))
+
+    bl = np.dot(zj, w2.transpose())
+    ol = sigmoid(bl)
+
+    yl = np.zeros((len(training_label), n_class))
+
+    for i in range(len(training_label)):
+        yl[i, training_label[i].astype(int)] = 1
+
+    delta = ol - yl
+
+    w2_error_grad = np.dot(delta.transpose(), zj)
+
+    w1_error_grad_temp1 = (1 - zj) * zj 
+    w1_error_grad_temp2 = np.dot(delta, w2)
+    w1_error_grad_temp = w1_error_grad_temp1 * w1_error_grad_temp2
+    w1_error_grad = np.dot(w1_error_grad_temp.transpose(), training_data)
+    w1_error_grad = w1_error_grad[0:n_hidden]
+
+    # Error
+    error_temp1 = np.log(1 - ol)
+    error_temp2 = (1 - yl) * error_temp1
+    error_temp3 = yl * np.log(ol) + error_temp2
+    error_temp4 = np.sum(error_temp3)
+    error_temp5 = -1 / len(training_data)
+    error = error_temp5 * error_temp4
 
 
-
+    # Regularization
+    obj_val_temp = (np.sum(np.square(w1)) + np.sum(np.square(w2))) *  lambdaval
+    obj_val = error + obj_val_temp / (2 * len(training_data))    
+    
     # Make sure you reshape the gradient matrices to a 1D array. for instance if your gradient matrices are grad_w1 and grad_w2
     # you would use code similar to the one below to create a flat array
     # obj_grad = np.concatenate((grad_w1.flatten(), grad_w2.flatten()),0)
     obj_grad = np.array([])
+    grad_w2 = np.add(w2_error_grad, lambdaval * w2)/training_data.shape[0]
+    grad_w1 = np.add(w1_error_grad, lambdaval * w1)/training_data.shape[0]
+
+    obj_grad = np.concatenate((grad_w1.flatten(), grad_w2.flatten()), 0)
 
     return (obj_val, obj_grad)
 
@@ -211,68 +262,100 @@ def nnPredict(w1, w2, data):
 
     labels = np.array([])
     # Your code here
+    data = np.column_stack((data,np.ones(data.shape[0])))
+
+    zj = sigmoid(np.dot(data, w1.transpose()))
+
+    zj = np.column_stack((zj,np.ones(zj.shape[0])))
+    bl = np.dot(zj, w2.transpose())
+    ol = sigmoid(bl)
+
+    labels = np.argmax(ol, axis=1)
+    labels = labels.reshape(len(labels),1)
 
     return labels
 
 
 """**************Neural Network Script Starts here********************************"""
+lambdas = []
+accuracy = []
+acc = []
+times = []
+for i in range(0, 61, 10):
+	t1 = time.time()
+	lambdaval = i
+	lambdas.append(i)
 
-train_data, train_label, validation_data, validation_label, test_data, test_label = preprocess()
+	train_data, train_label, validation_data, validation_label, test_data, test_label = preprocess()
 
-#  Train Neural Network
+	#  Train Neural Network
 
-# set the number of nodes in input unit (not including bias unit)
-n_input = train_data.shape[1]
+	# set the number of nodes in input unit (not including bias unit)
+	n_input = train_data.shape[1]
 
-# set the number of nodes in hidden unit (not including bias unit)
-n_hidden = 50
+	# set the number of nodes in hidden unit (not including bias unit)
+	n_hidden = 50
 
-# set the number of nodes in output unit
-n_class = 10
+	# set the number of nodes in output unit
+	n_class = 10
 
-# initialize the weights into some random matrices
-initial_w1 = initializeWeights(n_input, n_hidden)
-initial_w2 = initializeWeights(n_hidden, n_class)
+	# initialize the weights into some random matrices
+	initial_w1 = initializeWeights(n_input, n_hidden)
+	initial_w2 = initializeWeights(n_hidden, n_class)
 
-# unroll 2 weight matrices into single column vector
-initialWeights = np.concatenate((initial_w1.flatten(), initial_w2.flatten()), 0)
+	# unroll 2 weight matrices into single column vector
+	initialWeights = np.concatenate((initial_w1.flatten(), initial_w2.flatten()), 0)
 
-# set the regularization hyper-parameter
-lambdaval = 0
+	# set the regularization hyper-parameter
+	# lambdaval = 10
 
-args = (n_input, n_hidden, n_class, train_data, train_label, lambdaval)
+	args = (n_input, n_hidden, n_class, train_data, train_label, lambdaval)
 
-# Train Neural Network using fmin_cg or minimize from scipy,optimize module. Check documentation for a working example
+	# Train Neural Network using fmin_cg or minimize from scipy,optimize module. Check documentation for a working example
 
-opts = {'maxiter': 50}  # Preferred value.
+	opts = {'maxiter': 50}  # Preferred value.
 
-nn_params = minimize(nnObjFunction, initialWeights, jac=True, args=args, method='CG', options=opts)
+	nn_params = minimize(nnObjFunction, initialWeights, jac=True, args=args, method='CG', options=opts)
 
-# In Case you want to use fmin_cg, you may have to split the nnObjectFunction to two functions nnObjFunctionVal
-# and nnObjGradient. Check documentation for this function before you proceed.
-# nn_params, cost = fmin_cg(nnObjFunctionVal, initialWeights, nnObjGradient,args = args, maxiter = 50)
+	# In Case you want to use fmin_cg, you may have to split the nnObjectFunction to two functions nnObjFunctionVal
+	# and nnObjGradient. Check documentation for this function before you proceed.
+	# nn_params, cost = fmin_cg(nnObjFunctionVal, initialWeights, nnObjGradient,args = args, maxiter = 50)
 
 
-# Reshape nnParams from 1D vector into w1 and w2 matrices
-w1 = nn_params.x[0:n_hidden * (n_input + 1)].reshape((n_hidden, (n_input + 1)))
-w2 = nn_params.x[(n_hidden * (n_input + 1)):].reshape((n_class, (n_hidden + 1)))
+	# Reshape nnParams from 1D vector into w1 and w2 matrices
+	w1 = nn_params.x[0:n_hidden * (n_input + 1)].reshape((n_hidden, (n_input + 1)))
+	w2 = nn_params.x[(n_hidden * (n_input + 1)):].reshape((n_class, (n_hidden + 1)))
 
-# Test the computed parameters
+	# Test the computed parameters
 
-predicted_label = nnPredict(w1, w2, train_data)
+	predicted_label = nnPredict(w1, w2, train_data)
 
-# find the accuracy on Training Dataset
+	print('\n hyper-parameter value:'+ str(i))
 
-print('\n Training set Accuracy:' + str(100 * np.mean((predicted_label == train_label).astype(float))) + '%')
+	# find the accuracy on Training Dataset
 
-predicted_label = nnPredict(w1, w2, validation_data)
+	print('\n Training set Accuracy:' + str(100 * np.mean((predicted_label == train_label).astype(float))) + '%')
 
-# find the accuracy on Validation Dataset
+	predicted_label = nnPredict(w1, w2, validation_data)
 
-print('\n Validation set Accuracy:' + str(100 * np.mean((predicted_label == validation_label).astype(float))) + '%')
+	# find the accuracy on Validation Dataset
 
-predicted_label = nnPredict(w1, w2, test_data)
+	print('\n Validation set Accuracy:' + str(100 * np.mean((predicted_label == validation_label).astype(float))) + '%')
+	# accuracy.append(100 * np.mean((predicted_label == validation_label).astype(float)))
+	acc.append(100 * np.mean((predicted_label == validation_label).astype(float)))
 
-# find the accuracy on Validation Dataset
+	predicted_label = nnPredict(w1, w2, test_data)
 
-print('\n Test set Accuracy:' + str(100 * np.mean((predicted_label == test_label).astype(float))) + '%')
+	# find the accuracy on Validation Dataset
+
+	print('\n Test set Accuracy:' + str(100 * np.mean((predicted_label == test_label).astype(float))) + '%')
+	accuracy.append(100 * np.mean((predicted_label == test_label).astype(float)))
+
+	t2 = time.time()
+	times.append(t2-t1)
+	print('\n Time taken is:' + str(t2 - t1))
+
+print(n_hidden)
+print(lambdas)
+print(accuracy)
+print(acc)
