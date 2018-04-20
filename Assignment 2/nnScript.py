@@ -2,10 +2,9 @@ import numpy as np
 from scipy.optimize import minimize
 from scipy.io import loadmat
 from math import sqrt
-import time
+import pickle
 
 
-# t1 = time.time()
 def initializeWeights(n_in, n_out):
     """
     # initializeWeights return the random weights for Neural Network given the
@@ -14,8 +13,8 @@ def initializeWeights(n_in, n_out):
     # Input:
     # n_in: number of nodes of the input layer
     # n_out: number of nodes of the output layer
-       
-    # Output: 
+
+    # Output:
     # W: matrix of random initial weights with size (n_out x (n_in + 1))"""
 
     epsilon = sqrt(6) / sqrt(n_in + n_out + 1)
@@ -37,15 +36,15 @@ def preprocess():
      the MNIST data set from file 'mnist_all.mat'.
 
      Output:
-     train_data: matrix of training set. Each row of train_data contains 
+     train_data: matrix of training set. Each row of train_data contains
        feature vector of a image
      train_label: vector of label corresponding to each image in the training
        set
-     validation_data: matrix of training set. Each row of validation_data 
+     validation_data: matrix of training set. Each row of validation_data
        contains feature vector of a image
-     validation_label: vector of label corresponding to each image in the 
+     validation_label: vector of label corresponding to each image in the
        training set
-     test_data: matrix of training set. Each row of test_data contains 
+     test_data: matrix of training set. Each row of test_data contains
        feature vector of a image
      test_label: vector of label corresponding to each image in the testing
        set
@@ -130,9 +129,9 @@ def preprocess():
     # Feature selection
     # Your code here.
     remove_indices = np.all(train_data == train_data[0,:], axis = 0)
-    
+
     indices = [i for i in range(0, len(remove_indices)) if remove_indices[i] == True]
-    
+
     train_data = np.delete(train_data, indices, 1)
     test_data = np.delete(test_data, indices, 1)
     validation_data = np.delete(validation_data,indices,1)
@@ -146,9 +145,9 @@ def preprocess():
 
 
 def nnObjFunction(params, *args):
-    """% nnObjFunction computes the value of objective function (negative log 
-    %   likelihood error function with regularization) given the parameters 
-    %   of Neural Networks, thetraining data, their corresponding training 
+    """% nnObjFunction computes the value of objective function (negative log
+    %   likelihood error function with regularization) given the parameters
+    %   of Neural Networks, thetraining data, their corresponding training
     %   labels and lambda - regularization hyper-parameter.
 
     % Input:
@@ -166,8 +165,8 @@ def nnObjFunction(params, *args):
     %     in the vector represents the truth label of its corresponding image.
     % lambda: regularization hyper-parameter. This value is used for fixing the
     %     overfitting problem.
-       
-    % Output: 
+
+    % Output:
     % obj_val: a scalar value representing value of error function
     % obj_grad: a SINGLE vector of gradient value of error function
     % NOTE: how to compute obj_grad
@@ -177,10 +176,10 @@ def nnObjFunction(params, *args):
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % reshape 'params' vector into 2 matrices of weight w1 and w2
     % w1: matrix of weights of connections from input layer to hidden layers.
-    %     w1(i, j) represents the weight of connection from unit j in input 
+    %     w1(i, j) represents the weight of connection from unit j in input
     %     layer to unit i in hidden layer.
     % w2: matrix of weights of connections from hidden layer to output layers.
-    %     w2(i, j) represents the weight of connection from unit j in hidden 
+    %     w2(i, j) represents the weight of connection from unit j in hidden
     %     layer to unit i in output layer."""
 
     n_input, n_hidden, n_class, training_data, training_label, lambdaval = args
@@ -212,7 +211,7 @@ def nnObjFunction(params, *args):
 
     w2_error_grad = np.dot(delta.transpose(), zj)
 
-    w1_error_grad_temp1 = (1 - zj) * zj 
+    w1_error_grad_temp1 = (1 - zj) * zj
     w1_error_grad_temp2 = np.dot(delta, w2)
     w1_error_grad_temp = w1_error_grad_temp1 * w1_error_grad_temp2
     w1_error_grad = np.dot(w1_error_grad_temp.transpose(), training_data)
@@ -229,8 +228,8 @@ def nnObjFunction(params, *args):
 
     # Regularization
     obj_val_temp = (np.sum(np.square(w1)) + np.sum(np.square(w2))) *  lambdaval
-    obj_val = error + obj_val_temp / (2 * len(training_data))    
-    
+    obj_val = error + obj_val_temp / (2 * len(training_data))
+
     # Make sure you reshape the gradient matrices to a 1D array. for instance if your gradient matrices are grad_w1 and grad_w2
     # you would use code similar to the one below to create a flat array
     # obj_grad = np.concatenate((grad_w1.flatten(), grad_w2.flatten()),0)
@@ -249,15 +248,15 @@ def nnPredict(w1, w2, data):
 
     % Input:
     % w1: matrix of weights of connections from input layer to hidden layers.
-    %     w1(i, j) represents the weight of connection from unit i in input 
+    %     w1(i, j) represents the weight of connection from unit i in input
     %     layer to unit j in hidden layer.
     % w2: matrix of weights of connections from hidden layer to output layers.
-    %     w2(i, j) represents the weight of connection from unit i in input 
+    %     w2(i, j) represents the weight of connection from unit i in input
     %     layer to unit j in hidden layer.
-    % data: matrix of data. Each row of this matrix represents the feature 
+    % data: matrix of data. Each row of this matrix represents the feature
     %       vector of a particular image
-       
-    % Output: 
+
+    % Output:
     % label: a column vector of predicted labels"""
 
     labels = np.array([])
@@ -277,85 +276,64 @@ def nnPredict(w1, w2, data):
 
 
 """**************Neural Network Script Starts here********************************"""
-lambdas = []
-accuracy = []
-acc = []
-times = []
-for i in range(0, 61, 10):
-	t1 = time.time()
-	lambdaval = i
-	lambdas.append(i)
 
-	train_data, train_label, validation_data, validation_label, test_data, test_label = preprocess()
+train_data, train_label, validation_data, validation_label, test_data, test_label = preprocess()
+r_indices = np.all(train_data == train_data[0,:], axis = 0)
+indices = [i for i in range(0, len(r_indices)) if r_indices[i] == False]
+selected_features = indices
+#  Train Neural Network
 
-	#  Train Neural Network
+# set the number of nodes in input unit (not including bias unit)
+n_input = train_data.shape[1]
 
-	# set the number of nodes in input unit (not including bias unit)
-	n_input = train_data.shape[1]
+# set the number of nodes in hidden unit (not including bias unit)
+n_hidden = 50
 
-	# set the number of nodes in hidden unit (not including bias unit)
-	n_hidden = 50
+# set the number of nodes in output unit
+n_class = 10
 
-	# set the number of nodes in output unit
-	n_class = 10
+# initialize the weights into some random matrices
+initial_w1 = initializeWeights(n_input, n_hidden)
+initial_w2 = initializeWeights(n_hidden, n_class)
 
-	# initialize the weights into some random matrices
-	initial_w1 = initializeWeights(n_input, n_hidden)
-	initial_w2 = initializeWeights(n_hidden, n_class)
+# unroll 2 weight matrices into single column vector
+initialWeights = np.concatenate((initial_w1.flatten(), initial_w2.flatten()), 0)
 
-	# unroll 2 weight matrices into single column vector
-	initialWeights = np.concatenate((initial_w1.flatten(), initial_w2.flatten()), 0)
+# set the regularization hyper-parameter
+lambdaval = 20
 
-	# set the regularization hyper-parameter
-	# lambdaval = 10
+args = (n_input, n_hidden, n_class, train_data, train_label, lambdaval)
 
-	args = (n_input, n_hidden, n_class, train_data, train_label, lambdaval)
+# Train Neural Network using fmin_cg or minimize from scipy,optimize module. Check documentation for a working example
 
-	# Train Neural Network using fmin_cg or minimize from scipy,optimize module. Check documentation for a working example
+opts = {'maxiter': 50}  # Preferred value.
 
-	opts = {'maxiter': 50}  # Preferred value.
+nn_params = minimize(nnObjFunction, initialWeights, jac=True, args=args, method='CG', options=opts)
 
-	nn_params = minimize(nnObjFunction, initialWeights, jac=True, args=args, method='CG', options=opts)
+# In Case you want to use fmin_cg, you may have to split the nnObjectFunction to two functions nnObjFunctionVal
+# and nnObjGradient. Check documentation for this function before you proceed.
+# nn_params, cost = fmin_cg(nnObjFunctionVal, initialWeights, nnObjGradient,args = args, maxiter = 50)
 
-	# In Case you want to use fmin_cg, you may have to split the nnObjectFunction to two functions nnObjFunctionVal
-	# and nnObjGradient. Check documentation for this function before you proceed.
-	# nn_params, cost = fmin_cg(nnObjFunctionVal, initialWeights, nnObjGradient,args = args, maxiter = 50)
+# Reshape nnParams from 1D vector into w1 and w2 matrices
+w1 = nn_params.x[0:n_hidden * (n_input + 1)].reshape((n_hidden, (n_input + 1)))
+w2 = nn_params.x[(n_hidden * (n_input + 1)):].reshape((n_class, (n_hidden + 1)))
 
+# Test the computed parameters
 
-	# Reshape nnParams from 1D vector into w1 and w2 matrices
-	w1 = nn_params.x[0:n_hidden * (n_input + 1)].reshape((n_hidden, (n_input + 1)))
-	w2 = nn_params.x[(n_hidden * (n_input + 1)):].reshape((n_class, (n_hidden + 1)))
+predicted_label = nnPredict(w1, w2, train_data)
 
-	# Test the computed parameters
+# find the accuracy on Training Dataset
 
-	predicted_label = nnPredict(w1, w2, train_data)
+print('\n Training set Accuracy:' + str(100 * np.mean((predicted_label == train_label).astype(float))) + '%')
 
-	print('\n hyper-parameter value:'+ str(i))
+predicted_label = nnPredict(w1, w2, validation_data)
 
-	# find the accuracy on Training Dataset
+# find the accuracy on Validation Dataset
 
-	print('\n Training set Accuracy:' + str(100 * np.mean((predicted_label == train_label).astype(float))) + '%')
+print('\n Validation set Accuracy:' + str(100 * np.mean((predicted_label == validation_label).astype(float))) + '%')
 
-	predicted_label = nnPredict(w1, w2, validation_data)
+predicted_label = nnPredict(w1, w2, test_data)
 
-	# find the accuracy on Validation Dataset
+# find the accuracy on Validation Dataset
 
-	print('\n Validation set Accuracy:' + str(100 * np.mean((predicted_label == validation_label).astype(float))) + '%')
-	# accuracy.append(100 * np.mean((predicted_label == validation_label).astype(float)))
-	acc.append(100 * np.mean((predicted_label == validation_label).astype(float)))
-
-	predicted_label = nnPredict(w1, w2, test_data)
-
-	# find the accuracy on Validation Dataset
-
-	print('\n Test set Accuracy:' + str(100 * np.mean((predicted_label == test_label).astype(float))) + '%')
-	accuracy.append(100 * np.mean((predicted_label == test_label).astype(float)))
-
-	t2 = time.time()
-	times.append(t2-t1)
-	print('\n Time taken is:' + str(t2 - t1))
-
-print(n_hidden)
-print(lambdas)
-print(accuracy)
-print(acc)
+print('\n Test set Accuracy:' + str(100 * np.mean((predicted_label == test_label).astype(float))) + '%')
