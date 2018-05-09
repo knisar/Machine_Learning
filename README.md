@@ -1,3 +1,3 @@
 # Machine_Learning
 
-DataSet - MNIST
+DataSet - MNIST, CelebA
