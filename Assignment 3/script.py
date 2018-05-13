@@ -114,6 +114,22 @@ def blrObjFunction(initialWeights, *args):
     # YOUR CODE HERE #
     ##################
     # HINT: Do not forget to add the bias term to your input data
+    # Adding bias
+    initialWeights = initialWeights.reshape(n_features + 1, 1)
+    bias = np.ones(train_data.shape[0])
+    train_data = np.column_stack((bias, train_data))
+    theta = sigmoid(np.dot(train_data, initialWeights))
+    n = theta.shape[0]
+
+    # Error
+    error_1 = labeli * np.log(theta)
+    error_2 = (1 - labeli) * np.log(1 - theta)
+    error = (-1 / n) * np.sum(error_1 + error_2)
+
+    # Error Gradient
+    error_grad_1 = np.dot(train_data.transpose(), (theta - labeli))
+    error_grad = (1 / n) * np.sum(error_grad_1,axis=1)
+    error_grad = error_grad.flatten()
 
     return error, error_grad
 
@@ -139,6 +155,12 @@ def blrPredict(W, data):
     # YOUR CODE HERE #
     ##################
     # HINT: Do not forget to add the bias term to your input data
+    # Adding bias
+    bias = np.ones(data.shape[0])
+    data = np.column_stack((bias, data))
+    pred = sigmoid(np.dot(data, W))
+    label = np.argmax(pred, axis = 1)
+    label = label.reshape(label.shape[0],1)
 
     return label
 
@@ -159,6 +181,8 @@ def mlrObjFunction(params, *args):
         error_grad: the vector of size (D+1) x 10 representing the gradient of
                     error function
     """
+    initialWeights = params
+    train_data, labeli = args
     n_data = train_data.shape[0]
     n_feature = train_data.shape[1]
     error = 0
@@ -167,7 +191,17 @@ def mlrObjFunction(params, *args):
     ##################
     # YOUR CODE HERE #
     ##################
-    # HINT: Do not forget to add the bias term to your input data
+    
+    # HINT: Do not forget to add the bias term to your input data\
+    bias = np.ones(train_data.shape[0])
+    train_data = np.column_stack((bias, train_data))
+    initialWeights = initialWeights.reshape((n_feature + 1, 10))
+    theta = np.divide(np.exp(np.dot(train_data, initialWeights)), (np.sum(np.exp(np.dot(train_data, initialWeights)), axis = 1).astype(float).reshape((n_data, 1))))
+    error = -np.sum(np.multiply(labeli, np.log(theta)))
+
+    error_grad = (np.dot(train_data.T, (theta - labeli)))
+    error_grad = error_grad.flatten()
+
 
     return error, error_grad
 
@@ -193,6 +227,11 @@ def mlrPredict(W, data):
     # YOUR CODE HERE #
     ##################
     # HINT: Do not forget to add the bias term to your input data
+    bias = np.ones(data.shape[0])
+    data = np.column_stack((bias, data))
+    theta = np.divide(np.exp(np.dot(data, W)), (np.sum(np.exp(np.dot(data, W)), axis = 1).astype(float).reshape((data.shape[0], 1))))
+    label = np.argmax(theta, axis = 1)
+    label = label.reshape(label.shape[0],1)
 
     return label
 
@@ -245,6 +284,102 @@ print('\n\n--------------SVM-------------------\n\n')
 ##################
 # YOUR CODE HERE #
 ##################
+# Part 1
+# Using linear kernel (all other parameters are kept default).
+train_label = train_label.ravel()
+validation_label = validation_label.ravel()
+test_label = test_label.ravel()
+
+clf = SVC(kernel='linear')
+clf.fit(train_data, train_label)
+predicted_label = clf.predict(train_data)
+# Find the accuracy on Training Dataset
+print('\n Training set Accuracy:' + str(100 * np.mean((predicted_label == train_label).astype(float))) + '%')
+
+# Find the accuracy on Validation Dataset
+predicted_label = clf.predict(validation_data)
+print('\n Validation set Accuracy:' + str(100 * np.mean((predicted_label == validation_label).astype(float))) + '%')
+
+# Find the accuracy on Testing Dataset
+predicted_label = clf.predict(test_data)
+print('\n Testing set Accuracy:' + str(100 * np.mean((predicted_label == test_label).astype(float))) + '%')
+
+
+# Part 2
+# Using radial basis function with value of gamma setting to 1 (all other parameters are kept default).
+train_label = train_label.ravel()
+validation_label = validation_label.ravel()
+test_label = test_label.ravel()
+
+clf = SVC(gamma = 1)
+clf.fit(train_data, train_label)
+predicted_label = clf.predict(train_data)
+
+# Find the accuracy on Training Dataset
+print('\n Training set Accuracy:' + str(100 * np.mean((predicted_label == train_label).astype(float))) + '%')
+
+# Find the accuracy on Validation Dataset
+predicted_label = clf.predict(validation_data)
+print('\n Validation set Accuracy:' + str(100 * np.mean((predicted_label == validation_label).astype(float))) + '%')
+
+# Find the accuracy on Testing Dataset
+predicted_label = clf.predict(test_data)
+print('\n Testing set Accuracy:' + str(100 * np.mean((predicted_label == test_label).astype(float))) + '%')
+
+
+# Part 3
+# Using radial basis function with value of gamma setting to default 
+# (all other parameters are kept default).
+train_label = train_label.ravel()
+validation_label = validation_label.ravel()
+test_label = test_label.ravel()
+
+clf = SVC()
+clf.fit(train_data, train_label)
+predicted_label = clf.predict(train_data)
+
+# Find the accuracy on Training Dataset
+print('\n Training set Accuracy:' + str(100 * np.mean((predicted_label == train_label).astype(float))) + '%')
+
+# Find the accuracy on Validation Dataset
+predicted_label = clf.predict(validation_data)
+print('\n Validation set Accuracy:' + str(100 * np.mean((predicted_label == validation_label).astype(float))) + '%')
+
+# Find the accuracy on Testing Dataset
+predicted_label = clf.predict(test_data)
+print('\n Testing set Accuracy:' + str(100 * np.mean((predicted_label == test_label).astype(float))) + '%')
+
+
+# Part 4
+# Using radial basis function with value of gamma setting to default and varying value of C (1; 10; 20; 30;    ; 100)
+# and plot the graph of accuracy with respect to values of C in the report.
+train_label = train_label.ravel()
+validation_label = validation_label.ravel()
+test_label = test_label.ravel()
+c = []
+train_acc = []
+test_acc = []
+validation_acc = []
+for i in range(10, 101, 10):
+    c.append(i)
+    clf = SVC(C = i)
+    clf.fit(train_data, train_label)
+    predicted_label = clf.predict(train_data)
+
+    # Find the accuracy on Training Dataset
+    print('\n Training set Accuracy:' + str(100 * np.mean((predicted_label == train_label).astype(float))) + '%')
+    train_acc.append(100 * np.mean((predicted_label == train_label).astype(float)))
+    
+    # Find the accuracy on Validation Dataset
+    predicted_label = clf.predict(validation_data)
+    print('\n Validation set Accuracy:' + str(100 * np.mean((predicted_label == validation_label).astype(float))) + '%')
+    validation_acc.append(100 * np.mean((predicted_label == validation_label).astype(float)))
+
+    # Find the accuracy on Testing Dataset
+    predicted_label = clf.predict(test_data)
+    print('\n Testing set Accuracy:' + str(100 * np.mean((predicted_label == test_label).astype(float))) + '%')
+    test_acc.append(100 * np.mean((predicted_label == test_label).astype(float)))
+
 
 
 """
